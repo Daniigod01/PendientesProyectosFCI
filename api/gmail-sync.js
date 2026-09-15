@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { ensureBoard, saveBoard, kv, GMAIL_LAST_SYNC_KEY } from "../lib/db.js";
+import { ensureBoard, saveBoard } from "../lib/db.js";
 import { seedBoard } from "../shared/seedData.js";
 import { proyectoMencionado } from "../shared/proyectos.js";
 
@@ -31,13 +31,15 @@ export default async function handler(req, res) {
     const auth = getOAuthClient();
     const gmail = google.gmail({ version: "v1", auth });
 
-    const haceUnaHora = Math.floor(Date.now() / 1000) - 3600;
-    const lastSync = (await kv.get(GMAIL_LAST_SYNC_KEY)) || haceUnaHora;
-
+    // Ojo: NO se filtra por fecha aquí. El operador "after:" de Gmail filtra
+    // por la fecha en que se RECIBIÓ el correo, no por cuándo lo moviste a la
+    // etiqueta — así que un correo viejo que acabas de mover quedaría afuera.
+    // En vez de eso, se revisan los últimos correos de la etiqueta y se
+    // descartan los que ya estén importados (por su ID).
     const lista = await gmail.users.messages.list({
       userId: "me",
-      q: `label:PENDIENTES-PROYECTOS after:${lastSync}`,
-      maxResults: 25,
+      q: "label:PENDIENTES-PROYECTOS",
+      maxResults: 50,
     });
 
     const board = await ensureBoard(seedBoard());
@@ -78,7 +80,6 @@ export default async function handler(req, res) {
     }
 
     if (nuevos > 0) await saveBoard(board);
-    await kv.set(GMAIL_LAST_SYNC_KEY, Math.floor(Date.now() / 1000));
 
     res.status(200).json({ ok: true, nuevos });
   } catch (err) {
