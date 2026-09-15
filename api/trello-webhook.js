@@ -7,11 +7,28 @@ import { seedBoard } from "../shared/seedData.js";
 const LISTA_EN_PROCESO_ROGER = process.env.TRELLO_LIST_EN_PROCESO_ROGER_ID;
 const LISTA_HECHO_ROGER = process.env.TRELLO_LIST_HECHO_ROGER_ID;
 
+// Necesarias para pedirle a la API de Trello los detalles completos de la
+// tarjeta (el webhook en sí solo manda el nombre, no la descripción).
+const TRELLO_API_KEY = process.env.TRELLO_API_KEY;
+const TRELLO_TOKEN = process.env.TRELLO_TOKEN;
+
 function listaAEstado(listId) {
   if (!listId) return null;
   if (listId === LISTA_EN_PROCESO_ROGER) return "en-curso";
   if (listId === LISTA_HECHO_ROGER) return "hecho";
   return null; // "Por hacer", tarjetas de Javier u otras listas: se ignoran
+}
+
+async function obtenerDetalleTarjeta(cardId) {
+  if (!TRELLO_API_KEY || !TRELLO_TOKEN) return null;
+  try {
+    const url = `https://api.trello.com/1/cards/${cardId}?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}&fields=name,desc,due`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
 }
 
 export default async function handler(req, res) {
@@ -43,6 +60,10 @@ export default async function handler(req, res) {
     const board = await ensureBoard(seedBoard());
     const externalId = card.id;
 
+    // El payload del webhook solo trae el nombre de la tarjeta — pedimos el
+    // detalle completo (descripción, fecha) directo a la API de Trello.
+    const detalle = await obtenerDetalleTarjeta(externalId);
+
     // Si la tarjeta ya se había importado antes, la quitamos de donde
     // estuviera para reponerla en su nuevo estado (evita duplicados).
     for (const key of Object.keys(board)) {
@@ -51,11 +72,11 @@ export default async function handler(req, res) {
 
     board[estado].push({
       id: `trello_${externalId}`,
-      title: card.name || "(sin título)",
-      description: card.desc ? card.desc.slice(0, 500) : "",
+      title: (detalle?.name || card.name || "(sin título)"),
+      description: detalle?.desc ? detalle.desc.slice(0, 500) : "",
       project: "",
       priority: "media",
-      dueDate: card.due ? card.due.slice(0, 10) : "",
+      dueDate: detalle?.due ? detalle.due.slice(0, 10) : "",
       status: estado,
       source: "trello",
       externalId,
