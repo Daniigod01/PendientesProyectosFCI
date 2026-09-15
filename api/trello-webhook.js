@@ -20,13 +20,20 @@ function listaAEstado(listId) {
 }
 
 async function obtenerDetalleTarjeta(cardId) {
-  if (!TRELLO_API_KEY || !TRELLO_TOKEN) return null;
+  if (!TRELLO_API_KEY || !TRELLO_TOKEN) {
+    console.error("obtenerDetalleTarjeta: faltan TRELLO_API_KEY/TRELLO_TOKEN");
+    return null;
+  }
   try {
     const url = `https://api.trello.com/1/cards/${cardId}?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}&fields=name,desc,due`;
     const resp = await fetch(url);
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.error("obtenerDetalleTarjeta: Trello respondió", resp.status, await resp.text());
+      return null;
+    }
     return await resp.json();
-  } catch {
+  } catch (err) {
+    console.error("obtenerDetalleTarjeta: error de red", err);
     return null;
   }
 }
