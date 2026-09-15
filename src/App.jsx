@@ -252,20 +252,20 @@ export default function TableroPendientes() {
     try {
       const res = await fetch("/api/gmail-sync?manual=1");
       const data = await res.json().catch(() => null);
-      if (res.ok) {
+      if (res.ok && data?.ok !== false) {
         setError(null);
         play("save");
         const actualizado = await storageGet(STORAGE_KEY);
         if (actualizado) setBoard(JSON.parse(actualizado.value));
         setMensajeSync(data?.nuevos ? `${data.nuevos} pendiente(s) nuevo(s) desde Gmail.` : "Sin pendientes nuevos en Gmail.");
       } else {
-        setMensajeSync("No se pudo sincronizar con Gmail todavía (revisa la configuración en Vercel).");
+        setMensajeSync(`Error de Gmail: ${data?.error || "sin detalle"}`);
       }
-    } catch {
-      setMensajeSync("No se pudo conectar con /api/gmail-sync.");
+    } catch (err) {
+      setMensajeSync(`No se pudo conectar con /api/gmail-sync: ${err?.message || err}`);
     } finally {
       setSincronizando(false);
-      setTimeout(() => setMensajeSync(null), 6000);
+      setTimeout(() => setMensajeSync(null), 12000);
     }
   }
 
