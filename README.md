@@ -93,13 +93,14 @@ Luego, para que la app pueda leerla, requiere credenciales de Google Cloud
 
 - Hay un botón **"sincronizar_correo"** en la pestaña de Informes — lo puedes
   usar cuando quieras, sin esperar nada.
-- También dejé configurado un **cron job de Vercel** (`vercel.json`) para que
-  corra solo cada hora. Ojo: en el plan gratuito de Vercel (Hobby), los cron
-  jobs muy frecuentes pueden requerir plan Pro; si el tuyo es gratuito y no
-  corre solo, usa el botón manual, o registra la URL
+- También dejé un **cron job de Vercel** (`vercel.json`) corriendo **una vez
+  al día a las 9am**. En el plan gratuito (Hobby), Vercel no deja programar
+  crons más seguido que eso — si lo pones más frecuente, el deploy falla con
+  un error de límite. Si quieres que revise más seguido sin pasarte a plan
+  Pro, registra la URL
   `https://TU-APP.vercel.app/api/gmail-sync?secret=TU_SYNC_SECRET` (definiendo
   `SYNC_SECRET` como variable de entorno) en un cron externo gratuito como
-  <https://cron-job.org>.
+  <https://cron-job.org>, con la frecuencia que quieras.
 
 ## Desplegar en Vercel
 

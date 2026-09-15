@@ -1,5 +1,5 @@
 {
   "crons": [
-    { "path": "/api/gmail-sync", "schedule": "0 * * * *" }
+    { "path": "/api/gmail-sync", "schedule": "0 9 * * *" }
   ]
 }
